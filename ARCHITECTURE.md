@@ -91,6 +91,9 @@ Vesting math is intentionally simple and integer-only. Formula in
 The SDK never assumes a wallet is present: read methods need only `publicKey`, write methods
 require injected `signTransaction`.
 
+Every helper exported from `packages/utils` — with examples, truncation/rounding rules, and the
+supported maximum amount — is documented in [packages/utils/README.md](packages/utils/README.md).
+
 ---
 
 ## Application layer (`apps/web`)
@@ -101,6 +104,7 @@ A Next.js 15 App Router application:
 - `/streams` — create, inspect, withdraw from, and cancel streams.
 - `/escrow` — interact with the escrow primitive.
 - `/docs` — setup and reference documentation.
+- `/ui` — internal component gallery for design review (not linked in the header).
 
 ---
 
