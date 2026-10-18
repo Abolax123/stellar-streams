@@ -127,7 +127,7 @@ raw diagnostics message rather than failing the call.
 ### Events
 
 Each contract emits three topics — `(contract tag, action, id)` — with the `id`
-as a `u64` in topic three. The remaining fields are the event *data*, emitted as
+as a `u64` in topic three. The remaining fields are the event _data_, emitted as
 a **map keyed by field name** (the `#[contractevent]` struct's non-`#[topic]`
 fields), not as a positional tuple, so decoding does not depend on field order.
 
@@ -153,12 +153,12 @@ weights. Anyone may pay into a split and funds distribute on the spot.
 
 ### Entry points
 
-| Function | Arguments | Returns | Auth |
-| :--- | :--- | :--- | :--- |
-| `create_split` | `creator: Address, recipients: Vec<Address>, shares: Vec<u32>` | `Result<u64, SplitError>` — the new split id | `creator` |
-| `distribute` | `split_id: u64, from: Address, token: Address, amount: i128` | `Result<(), SplitError>` | `from` |
-| `get_split` | `split_id: u64` | `Option<Split>` | — |
-| `next_split_id` | — | `u64` (`1` on a fresh deploy) | — |
+| Function        | Arguments                                                      | Returns                                      | Auth      |
+| :-------------- | :------------------------------------------------------------- | :------------------------------------------- | :-------- |
+| `create_split`  | `creator: Address, recipients: Vec<Address>, shares: Vec<u32>` | `Result<u64, SplitError>` — the new split id | `creator` |
+| `distribute`    | `split_id: u64, from: Address, token: Address, amount: i128`   | `Result<(), SplitError>`                     | `from`    |
+| `get_split`     | `split_id: u64`                                                | `Option<Split>`                              | —         |
+| `next_split_id` | —                                                              | `u64` (`1` on a fresh deploy)                | —         |
 
 ```rust
 struct Split {
@@ -173,15 +173,15 @@ paired and must be the same length. A share is a weight, not a percentage —
 
 ### Errors — `SplitError` (`#[repr(u32)]`)
 
-| Code | Variant | Produced when |
-| :-: | :--- | :--- |
-| 1 | `EmptyRecipients` | `create_split` with an empty `recipients` vector. |
-| 2 | `LengthMismatch` | `create_split` when `shares.len() != recipients.len()`. |
-| 3 | `InvalidShares` | `create_split` when any share is `0`. |
-| 4 | `InvalidAmount` | `distribute` with `amount <= 0`. Checked **before** `from`'s auth and before the split lookup, so a zero amount is rejected even against a nonexistent split. |
-| 5 | `DuplicateRecipient` | `create_split` when an address appears twice, in any position. |
-| 6 | `SplitNotFound` | `distribute` for an unregistered `split_id` (or an archived entry). |
-| 7 | `Unauthorized` | **Defined but never returned.** Kept so existing codes keep their values. Authorization failures in this contract surface as a Soroban `Context` error from `require_auth()`, not as this code — a client must not wait for it. |
+| Code | Variant              | Produced when                                                                                                                                                                                                                   |
+| :--: | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|  1   | `EmptyRecipients`    | `create_split` with an empty `recipients` vector.                                                                                                                                                                               |
+|  2   | `LengthMismatch`     | `create_split` when `shares.len() != recipients.len()`.                                                                                                                                                                         |
+|  3   | `InvalidShares`      | `create_split` when any share is `0`.                                                                                                                                                                                           |
+|  4   | `InvalidAmount`      | `distribute` with `amount <= 0`. Checked **before** `from`'s auth and before the split lookup, so a zero amount is rejected even against a nonexistent split.                                                                   |
+|  5   | `DuplicateRecipient` | `create_split` when an address appears twice, in any position.                                                                                                                                                                  |
+|  6   | `SplitNotFound`      | `distribute` for an unregistered `split_id` (or an archived entry).                                                                                                                                                             |
+|  7   | `Unauthorized`       | **Defined but never returned.** Kept so existing codes keep their values. Authorization failures in this contract surface as a Soroban `Context` error from `require_auth()`, not as this code — a client must not wait for it. |
 
 Rounding: each non-final recipient receives `amount * shares[i] / total_shares`
 (integer division, truncating) and the **final** recipient receives
@@ -191,17 +191,17 @@ who wants to predict one person's portion must simulate the whole vector.
 
 ### Events
 
-| Topics | Data fields | Published by |
-| :--- | :--- | :--- |
-| `("splits", "created", id: u64)` | `creator: Address`, `total_shares: u32` | `create_split` |
-| `("splits", "distrib", id: u64)` | `from: Address`, `token: Address`, `amount: i128` | `distribute` |
+| Topics                           | Data fields                                       | Published by   |
+| :------------------------------- | :------------------------------------------------ | :------------- |
+| `("splits", "created", id: u64)` | `creator: Address`, `total_shares: u32`           | `create_split` |
+| `("splits", "distrib", id: u64)` | `from: Address`, `token: Address`, `amount: i128` | `distribute`   |
 
 The Rust event types are `SplitCreated` and `SplitDistributed`. Note the second
 symbol of the payout event is `distrib`, not `distributed` — a topic symbol is
 limited to nine characters, and the truncation is part of the topic a decoder
 must match. The contract publishes one `distrib` event per payout even though
 the call performs `1 + n` token transfers; a balance-tracking indexer should
-read the transfers, while the event is the record of *why* they happened.
+read the transfers, while the event is the record of _why_ they happened.
 
 ---
 
@@ -212,14 +212,14 @@ deadline-driven cancellation.
 
 ### Entry points
 
-| Function | Arguments | Returns | Auth |
-| :--- | :--- | :--- | :--- |
-| `create_escrow` | `id: u64, payer: Address, payee: Address, arbiter: Address, token: Address, amount: i128, deadline: u64` | `Result<(), EscrowError>` | `payer` |
-| `fund_escrow` | `id: u64` | `Result<(), EscrowError>` | `payer` |
-| `release_escrow` | `id: u64, caller: Address` | `Result<(), EscrowError>` | `caller`, who must be `payer` or `arbiter` |
-| `refund_escrow` | `id: u64, caller: Address` | `Result<(), EscrowError>` | `caller`, who must be `payee` or `arbiter` |
-| `cancel_escrow` | `id: u64, caller: Address` | `Result<(), EscrowError>` | `caller`, who must be `payer` |
-| `get_escrow` | `id: u64` | `Option<Escrow>` | — |
+| Function         | Arguments                                                                                                | Returns                   | Auth                                       |
+| :--------------- | :------------------------------------------------------------------------------------------------------- | :------------------------ | :----------------------------------------- |
+| `create_escrow`  | `id: u64, payer: Address, payee: Address, arbiter: Address, token: Address, amount: i128, deadline: u64` | `Result<(), EscrowError>` | `payer`                                    |
+| `fund_escrow`    | `id: u64`                                                                                                | `Result<(), EscrowError>` | `payer`                                    |
+| `release_escrow` | `id: u64, caller: Address`                                                                               | `Result<(), EscrowError>` | `caller`, who must be `payer` or `arbiter` |
+| `refund_escrow`  | `id: u64, caller: Address`                                                                               | `Result<(), EscrowError>` | `caller`, who must be `payee` or `arbiter` |
+| `cancel_escrow`  | `id: u64, caller: Address`                                                                               | `Result<(), EscrowError>` | `caller`, who must be `payer`              |
+| `get_escrow`     | `id: u64`                                                                                                | `Option<Escrow>`          | —                                          |
 
 ```rust
 struct Escrow {
@@ -242,34 +242,34 @@ signed, and a mismatch between the signer and `caller` fails at `require_auth()`
 
 ### Status transitions
 
-| From | `fund` | `release` | `refund` | `cancel` |
-| :--- | :--- | :--- | :--- | :--- |
-| `Created` (unfunded) | → `Funded` | 5 | 5 | → `Cancelled`, no transfer |
-| `Funded` | 5 | → `Released` | → `Refunded` | → `Cancelled` + refund, **only past `deadline`** (else 6) |
-| `Released` / `Refunded` / `Cancelled` | 5 | 8 | 8 | 8 |
+| From                                  | `fund`     | `release`    | `refund`     | `cancel`                                                  |
+| :------------------------------------ | :--------- | :----------- | :----------- | :-------------------------------------------------------- |
+| `Created` (unfunded)                  | → `Funded` | 5            | 5            | → `Cancelled`, no transfer                                |
+| `Funded`                              | 5          | → `Released` | → `Refunded` | → `Cancelled` + refund, **only past `deadline`** (else 6) |
+| `Released` / `Refunded` / `Cancelled` | 5          | 8            | 8            | 8                                                         |
 
 ### Errors — `EscrowError` (`#[repr(u32)]`)
 
-| Code | Variant | Produced when |
-| :-: | :--- | :--- |
-| 1 | `EscrowNotFound` | No stored escrow under `id` — `fund_escrow`, `release_escrow`, `refund_escrow`, `cancel_escrow`. |
-| 2 | `EscrowAlreadyExists` | `create_escrow` with an `id` already in storage. |
-| 3 | `InvalidAmount` | `create_escrow` with `amount <= 0`. Checked after the duplicate-id test and before `payer`'s auth. |
-| 4 | `UnauthorizedOperation` | `release_escrow` by an address that is neither `payer` nor `arbiter`; `refund_escrow` by an address that is neither `payee` nor `arbiter`; `cancel_escrow` by anyone other than `payer`. |
-| 5 | `InvalidStateTransition` | `fund_escrow` when not `Created`; `release_escrow`/`refund_escrow` while still `Created` (funds have not been locked yet). |
-| 6 | `DeadlineNotReached` | `cancel_escrow` on a `Funded` escrow while `ledger().timestamp() < deadline`. |
-| 7 | `DeadlineExpired` | **Defined but never returned.** Kept so existing codes keep their values. Nothing in the contract raises it: the deadline check on `cancel_escrow` returns 6 when the deadline has *not* been reached, and `release_escrow`/`refund_escrow` do not consult `deadline` at all — a funded escrow stays releasable after its deadline indefinitely. A client must not wait for this code, and must not assume a passed deadline locks an escrow. |
-| 8 | `AlreadyFinalized` | `release_escrow`, `refund_escrow`, or `cancel_escrow` on an escrow already in `Released`, `Refunded` or `Cancelled`. |
+| Code | Variant                  | Produced when                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| :--: | :----------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|  1   | `EscrowNotFound`         | No stored escrow under `id` — `fund_escrow`, `release_escrow`, `refund_escrow`, `cancel_escrow`.                                                                                                                                                                                                                                                                                                                                              |
+|  2   | `EscrowAlreadyExists`    | `create_escrow` with an `id` already in storage.                                                                                                                                                                                                                                                                                                                                                                                              |
+|  3   | `InvalidAmount`          | `create_escrow` with `amount <= 0`. Checked after the duplicate-id test and before `payer`'s auth.                                                                                                                                                                                                                                                                                                                                            |
+|  4   | `UnauthorizedOperation`  | `release_escrow` by an address that is neither `payer` nor `arbiter`; `refund_escrow` by an address that is neither `payee` nor `arbiter`; `cancel_escrow` by anyone other than `payer`.                                                                                                                                                                                                                                                      |
+|  5   | `InvalidStateTransition` | `fund_escrow` when not `Created`; `release_escrow`/`refund_escrow` while still `Created` (funds have not been locked yet).                                                                                                                                                                                                                                                                                                                    |
+|  6   | `DeadlineNotReached`     | `cancel_escrow` on a `Funded` escrow while `ledger().timestamp() < deadline`.                                                                                                                                                                                                                                                                                                                                                                 |
+|  7   | `DeadlineExpired`        | **Defined but never returned.** Kept so existing codes keep their values. Nothing in the contract raises it: the deadline check on `cancel_escrow` returns 6 when the deadline has _not_ been reached, and `release_escrow`/`refund_escrow` do not consult `deadline` at all — a funded escrow stays releasable after its deadline indefinitely. A client must not wait for this code, and must not assume a passed deadline locks an escrow. |
+|  8   | `AlreadyFinalized`       | `release_escrow`, `refund_escrow`, or `cancel_escrow` on an escrow already in `Released`, `Refunded` or `Cancelled`.                                                                                                                                                                                                                                                                                                                          |
 
 ### Events
 
-| Topics | Data fields | Published by |
-| :--- | :--- | :--- |
-| `("escrow", "created", id: u64)` | `payer: Address`, `amount: i128` | `create_escrow` |
-| `("escrow", "funded", id: u64)` | `amount: i128` | `fund_escrow` |
-| `("escrow", "released", id: u64)` | `caller: Address`, `payee: Address`, `amount: i128` | `release_escrow` |
-| `("escrow", "refunded", id: u64)` | `caller: Address`, `payer: Address`, `amount: i128` | `refund_escrow` |
-| `("escrow", "cancelled", id: u64)` | `payer: Address` | `cancel_escrow` |
+| Topics                             | Data fields                                         | Published by     |
+| :--------------------------------- | :-------------------------------------------------- | :--------------- |
+| `("escrow", "created", id: u64)`   | `payer: Address`, `amount: i128`                    | `create_escrow`  |
+| `("escrow", "funded", id: u64)`    | `amount: i128`                                      | `fund_escrow`    |
+| `("escrow", "released", id: u64)`  | `caller: Address`, `payee: Address`, `amount: i128` | `release_escrow` |
+| `("escrow", "refunded", id: u64)`  | `caller: Address`, `payer: Address`, `amount: i128` | `refund_escrow`  |
+| `("escrow", "cancelled", id: u64)` | `payer: Address`                                    | `cancel_escrow`  |
 
 The Rust event types are `EscrowCreated`, `EscrowFunded`, `EscrowReleased`,
 `EscrowRefunded` and `EscrowCancelled`. `released` and `refunded` are the only
@@ -289,7 +289,7 @@ case happened.
 - **Auth failures are not error codes.** Every state-changing entry point calls
   `require_auth()` on the actor it needs, and a missing or wrong signature is a
   Soroban `Context` error at the host level, not one of the codes above. The
-  `Unauthorized`-style variants in these enums describe *in-contract* role
+  `Unauthorized`-style variants in these enums describe _in-contract_ role
   mismatches (or, in two cases, nothing at all — see codes `7` for splits and `7`
   for escrow).
 - **Amounts are `i128` in the token's smallest unit; weights and ids are `u32`/`u64`.**
