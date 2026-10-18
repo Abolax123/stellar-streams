@@ -326,6 +326,39 @@ fn test_protocol_fee() {
 }
 
 #[test]
+fn test_set_fee_emits_event() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let client = register(&env);
+    let admin = account(&env);
+    let treasury = account(&env);
+    client.initialize(&admin, &treasury, &100);
+
+    client.set_fee(&250);
+    assert_eq!(
+        env.events().all().filter_by_contract(&client.address),
+        [FeeUpdated { old_fee_bps: 100, new_fee_bps: 250 }.to_xdr(&env, &client.address)],
+    );
+}
+
+#[test]
+fn test_set_treasury_emits_event() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let client = register(&env);
+    let admin = account(&env);
+    let treasury = account(&env);
+    client.initialize(&admin, &treasury, &100);
+
+    let new_treasury = account(&env);
+    client.set_treasury(&new_treasury);
+    assert_eq!(
+        env.events().all().filter_by_contract(&client.address),
+        [TreasuryUpdated { treasury: new_treasury }.to_xdr(&env, &client.address)],
+    );
+}
+
+#[test]
 fn test_initialize_twice_fails() {
     let env = Env::default();
     env.mock_all_auths();
