@@ -139,6 +139,21 @@ pub struct StreamCancelled {
     pub refunded: i128,
 }
 
+/// Emitted when the admin changes the protocol fee.
+#[contractevent(topics = ["stream", "fee_set"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FeeUpdated {
+    pub old_fee_bps: u32,
+    pub new_fee_bps: u32,
+}
+
+/// Emitted when the admin changes the treasury address.
+#[contractevent(topics = ["stream", "treasury"])]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct TreasuryUpdated {
+    pub treasury: Address,
+}
+
 #[contractevent]
 pub struct StreamPaused {
     #[topic]
@@ -188,7 +203,9 @@ impl StreamContract {
             return Err(StreamError::InvalidFee);
         }
         admin.require_auth();
+        let old_fee_bps: u32 = env.storage().instance().get(&DataKey::FeeBps).unwrap_or(0);
         env.storage().instance().set(&DataKey::FeeBps, &fee_bps);
+        FeeUpdated { old_fee_bps, new_fee_bps: fee_bps }.publish(&env);
         Ok(())
     }
 
@@ -198,6 +215,7 @@ impl StreamContract {
             env.storage().instance().get(&DataKey::Admin).ok_or(StreamError::Unauthorized)?;
         admin.require_auth();
         env.storage().instance().set(&DataKey::Treasury, &treasury);
+        TreasuryUpdated { treasury }.publish(&env);
         Ok(())
     }
 
